@@ -34,7 +34,7 @@ import SettingPanel from "../_components/SettingPanel";
 
 // const initialNodes = [ ];
 // const initialEdges = [{ id: "n1-n2", source: "n1", target: "n2" }];
-export const nodeTypes = {
+const nodeTypes = {
   StartNode: StartNode,
   AgentNode: AgentNode,
   EndNode: EndNode,

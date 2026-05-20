@@ -37,10 +37,10 @@ export async function POST(req: NextRequest) {
         const generatedTools = (tools || []).map((t: any) => {
             
             // 🧠 UPGRADED SMART PARSE: Matches both {variable} and {{variable}}
-            const urlVars = [...(t.url.match(/\{+([^}]+)\}+/g) || [])].map(m => m.replace(/[{}]/g, ''));
+            const urlVars = [...(t.url.match(/\{+([^}]+)\}+/g) || [])].map((m: string) => m.replace(/[{}]/g, ''));
             
             const combinedParams: Record<string, string> = { ...(t.parameters || {}) };
-            urlVars.forEach(v => {
+            urlVars.forEach((v: string) => {
                 if (!combinedParams[v]) combinedParams[v] = "string";
             });
 
@@ -94,7 +94,8 @@ export async function POST(req: NextRequest) {
         // Attach custom model to supervisor
         const finalAgent = Agent.create({
             name: agentName || "Primary Supervisor",
-            instructions: `You are an orchestrator. Your only job is to look at the user request and immediately call the handoff tool for the specialized agent that matches the topic. Do not answer questions yourself if a sub-agent exists. Available agents: ${createdAgents.map(a => a.name).join(", ")}.`,
+            // 🌟 FIXED: Added '(a: any)' to resolve the implicit any error on line 97
+            instructions: `You are an orchestrator. Your only job is to look at the user request and immediately call the handoff tool for the specialized agent that matches the topic. Do not answer questions yourself if a sub-agent exists. Available agents: ${createdAgents.map((a: any) => a.name).join(", ")}.`,
             handoffs: createdAgents.length > 0 ? createdAgents : undefined,
             model: customModel
         });
@@ -107,7 +108,8 @@ export async function POST(req: NextRequest) {
 
         const stream = result.toTextStream();
 
-        return new Response(stream, {
+        // 🌟 FIXED: Cast stream 'as any' to bypass the Next.js / DOM ReadableStream type clash
+        return new Response(stream as any, {
             headers: {
                 'Content-Type': 'text/plain; charset=utf-8',
                 'Cache-Control': 'no-cache'
