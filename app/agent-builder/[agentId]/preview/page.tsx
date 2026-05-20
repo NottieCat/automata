@@ -7,7 +7,6 @@ import { useParams } from "next/navigation";
 import { Agent } from "@/types/AgentType";
 import { Background, ReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { setConfig } from "next/config";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { RefreshCcwIcon } from "lucide-react";
