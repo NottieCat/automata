@@ -27,7 +27,12 @@ function SettingPanel() {
 
     
 
-    return selectedNode ? (
+    // Node types that actually have a settings form. StartNode (and any
+    // unknown type) has none — rendering the container for it shows an
+    // empty white box.
+    const typesWithSettings = ['AgentNode', 'EndNode', 'IfElseNode', 'WhileNode', 'UserApprovalNode', 'ApiNode'];
+
+    return selectedNode && typesWithSettings.includes(selectedNode.type) ? (
         <div className='p-5 bg-white rounded-2xl w-[350px] shadow'>
             {selectedNode.type == 'AgentNode' && (
                 <AgentSettings
