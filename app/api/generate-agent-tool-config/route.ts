@@ -1,4 +1,4 @@
-import { openai } from "@/config/OpenAiModel";
+import { getOpenAi } from "@/config/OpenAiModel";
 import { NextRequest, NextResponse } from "next/server";
 
 const PROMPT = `from this flow, Generate a agent instruction prompt with all details along with 
@@ -38,18 +38,23 @@ make sure to mentioned parameters depends on get and post request:{
 export async function POST(req: NextRequest) {
     const { jsonConfig } = await req.json();
 
-    const response = await openai.responses.create({
-        model: 'baidu/cobuddy:free',
-        input: JSON.stringify(jsonConfig) + PROMPT,
+    const openai = getOpenAi();
+    // Chat Completions instead of the Responses API — OpenRouter only supports
+    // the latter on some providers, and free-tier endpoints often lack it.
+    const response = await openai.chat.completions.create({
+        model: process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-super-120b-a12b:free',
+        messages: [{ role: 'user', content: JSON.stringify(jsonConfig) + PROMPT }],
     })
 
-    const outputText = response.output_text;
-    // parse the response to JSOn
+    const outputText = response.choices[0]?.message?.content ?? '';
+    // parse the response to JSON — strip code fences and any surrounding prose
     let parsedJson;
     try {
-        parsedJson = JSON.parse(outputText.replace('```json', '').replace('```', ''));
+        const start = outputText.indexOf('{');
+        const end = outputText.lastIndexOf('}');
+        parsedJson = JSON.parse(outputText.slice(start, end + 1));
     } catch (err) {
-        return NextResponse.json({error: 'Failed to parse JSON response', details:err}, {status: 500});
+        return NextResponse.json({error: 'Failed to parse JSON response', details:err, raw: outputText}, {status: 500});
     }
 
     return NextResponse.json({parsedJson});

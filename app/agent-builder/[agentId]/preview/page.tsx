@@ -11,6 +11,7 @@ import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { RefreshCcwIcon } from "lucide-react";
 import ChatUI from "./_components/ChatUI";
+import { toast } from "sonner";
 import PublishCode from "./_components/PublishCode";
 import { nodeTypes } from "../../_components/NodeTypes";
 
@@ -21,6 +22,7 @@ function PreviewAgent() {
   const [flowConfig, setFlowConfig] = React.useState<any>(null);
   const [loading, setLoading] = useState(false);
   const updateAgentToolConfig = useMutation(api.agent.UpdateAgentToolConfig);
+  const publishAgent = useMutation(api.agent.PublishAgent);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
 
@@ -165,9 +167,9 @@ function PreviewAgent() {
 
       console.log(result.data);
 
-      // update to our DB
+      // update to our DB — must be the Convex document _id, not the URL uuid
       await updateAgentToolConfig({
-        id: agentId as any, // 🌟 FIXED: Use agentId from useParams() directly
+        id: agentDetail?._id as any,
         agentToolConfig: result.data,
       });
 
@@ -179,8 +181,12 @@ function PreviewAgent() {
     }
   };
 
-  const OnPublish = () => {
+  const OnPublish = async () => {
     setOpenDialog(true);
+    if (agentDetail?._id && !agentDetail.published) {
+      await publishAgent({ id: agentDetail._id as any });
+      toast.success("Agent published!");
+    }
   }
 
   return (
@@ -224,7 +230,7 @@ function PreviewAgent() {
           )}
         </div>
       </div>
-      <PublishCode openDialog={openDialog} setOpenDialog={setOpenDialog} />
+      <PublishCode openDialog={openDialog} setOpenDialog={setOpenDialog} agentDetail={agentDetail} />
     </div>
   );
 }

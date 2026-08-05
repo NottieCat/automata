@@ -21,7 +21,9 @@ function AgentSettings({selectedNode, updateFormData}: any) {
     })
 
     useEffect(() => {
-        selectedNode && setFormData(selectedNode?.data?.settings);
+        // Unsaved nodes have no settings yet — merge over the defaults so
+        // formData never becomes undefined (which makes inputs uncontrolled).
+        selectedNode?.data?.settings && setFormData((prev) => ({...prev, ...selectedNode.data.settings}));
     }, [selectedNode])
 
     const handleChange = (key: string, value: any) => {

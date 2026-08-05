@@ -1,24 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
 import { Agent, run, tool, OpenAIChatCompletionsModel } from '@openai/agents';
-import OpenAI from 'openai'; 
+import { getOpenAi } from "@/config/OpenAiModel";
 
 export async function POST(req: NextRequest) {
     try {
         const { input, tools, agents, conversationId, agentName, messages } = await req.json();
 
-        // 🛡️ OpenRouter Client with explicit headers to prevent 400 rejections
-        const openRouterClient = new OpenAI({
-            apiKey: process.env.NEXT_PUBLIC_OPENROUTER_API_KEY,
-            baseURL: "https://openrouter.ai/api/v1",
-            defaultHeaders: {
-                "HTTP-Referer": "http://localhost:3000",
-                "X-Title": "AI Agent Builder",
-            }
-        });
-
-        // 🌟 Use standard GPT-4o-mini for perfect tool-schema compatibility
-        const customModel = new OpenAIChatCompletionsModel(openRouterClient, "openai/gpt-4o-mini");
+        const customModel = new OpenAIChatCompletionsModel(
+            getOpenAi(),
+            process.env.OPENROUTER_MODEL || "nvidia/nemotron-3-super-120b-a12b:free"
+        );
 
         // MEMORY ENGINE
         let contextualInput = input;
@@ -81,18 +73,27 @@ export async function POST(req: NextRequest) {
             });
         });
 
+        // Small models tend to say "let me check..." and stop without actually
+        // calling the tool — forbid that explicitly.
+        const TOOL_POLICY = `
+
+CRITICAL TOOL RULE: When the user asks for something a tool can provide, you MUST call that tool in this same turn and answer using its result. NEVER reply with only an acknowledgement like "Sure, let me check" — announcing an action without calling the tool is a failure. Only skip the tool call to ask for a genuinely missing required parameter.`;
+
         // Attach custom model to sub-agents
         const createdAgents = (agents || []).map((config: any) => {
             return new Agent({
                 name: config?.name,
-                instructions: config?.instructions || "Help the user with their request using your tools.",
+                instructions: (config?.instructions || "Help the user with their request using your tools.") + TOOL_POLICY,
                 tools: generatedTools,
-                model: customModel 
+                model: customModel
             });
         });
 
+        // With a single agent there is nothing to orchestrate — run it directly.
+        // The supervisor handoff hop just adds another chance for the model to
+        // stop early ("Sure, let me check...") without calling the tool.
         // Attach custom model to supervisor
-        const finalAgent = Agent.create({
+        const finalAgent = createdAgents.length === 1 ? createdAgents[0] : Agent.create({
             name: agentName || "Primary Supervisor",
             // 🌟 FIXED: Added '(a: any)' to resolve the implicit any error on line 97
             instructions: `You are an orchestrator. Your only job is to look at the user request and immediately call the handoff tool for the specialized agent that matches the topic. Do not answer questions yourself if a sub-agent exists. Available agents: ${createdAgents.map((a: any) => a.name).join(", ")}.`,
@@ -106,9 +107,11 @@ export async function POST(req: NextRequest) {
             stream: true
         });
 
-        const stream = result.toTextStream();
+        // toTextStream() emits string chunks; a Response body must be bytes,
+        // so pipe through TextEncoderStream to avoid "Received non-Uint8Array chunk".
+        const stream = (result.toTextStream() as unknown as ReadableStream<string>)
+            .pipeThrough(new TextEncoderStream());
 
-        // 🌟 FIXED: Cast stream 'as any' to bypass the Next.js / DOM ReadableStream type clash
         return new Response(stream as any, {
             headers: {
                 'Content-Type': 'text/plain; charset=utf-8',

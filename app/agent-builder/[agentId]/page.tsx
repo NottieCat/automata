@@ -67,10 +67,22 @@ function AgentBuilder() {
 
   useEffect(() => {
     if (agentDetail) {
-      setNodes(agentDetail.nodes);
-      setEdges(agentDetail.edges);
-      setAddedNodes(agentDetail.nodes);
-      setNodeEdges(agentDetail.edges);
+      // A newly created agent has no saved nodes/edges yet. Fall back to
+      // sensible defaults so <ReactFlow> never receives `undefined` (which
+      // crashes it) and new workflows start with a Start node.
+      const initialNodes = agentDetail.nodes ?? [
+        {
+          id: "start",
+          position: { x: 0, y: 0 },
+          data: { label: "Start" },
+          type: "StartNode",
+        },
+      ];
+      const initialEdges = agentDetail.edges ?? [];
+      setNodes(initialNodes);
+      setEdges(initialEdges);
+      setAddedNodes(initialNodes);
+      setNodeEdges(initialEdges);
     }
   }, [agentDetail])
 

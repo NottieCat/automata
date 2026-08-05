@@ -21,7 +21,7 @@ function ApiAgentSettings({ selectedNode, updateFormData }: any) {
     })
 
     useEffect(() => {
-        selectedNode && setFormData(selectedNode?.data?.settings)
+        selectedNode?.data?.settings && setFormData((prev) => ({...prev, ...selectedNode.data.settings}))
     }, [selectedNode])
 
     const handleChange = (key: string, value: any) => {

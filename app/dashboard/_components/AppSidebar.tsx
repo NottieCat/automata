@@ -67,11 +67,14 @@ function AppSidebar() {
     const convex = useConvex();
     const [totalRemainingCredits, setTotalRemainingCredits] = React.useState<number>(0);
 
+    // Depend on the stable _id, not the userDetail object itself: this effect
+    // calls setUserDetail below, which creates a new object — depending on
+    // [userDetail] made the effect re-trigger itself in an infinite loop.
     useEffect(() => {
-        if (!isPaidUser && userDetail) {
+        if (!isPaidUser && userDetail?._id) {
             GetUserAgent();
         }
-    }, [userDetail])
+    }, [userDetail?._id])
 
     const GetUserAgent = async () => {
         const result = await convex.query(api.agent.GetUserAgents, {

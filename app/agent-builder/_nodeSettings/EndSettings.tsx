@@ -8,7 +8,7 @@ function EndSettings({selectedNode, updateFormData}: any) {
 
     const [formData, setFormData] = useState({schema: ''})
     useEffect(() => {
-        selectedNode && setFormData(selectedNode?.data.settings);
+        selectedNode?.data?.settings && setFormData((prev) => ({...prev, ...selectedNode.data.settings}));
     }, [selectedNode])
 
     return (

@@ -7,8 +7,7 @@ import { toast } from 'sonner'
 function WhileSettings({selectedNode, updateFormData}: any) {
     const [formData, setFormData] = useState({whileCondition: ''})
         useEffect(() => {
-            console.log(selectedNode)
-            selectedNode && setFormData(selectedNode?.data.settings);
+            selectedNode?.data?.settings && setFormData((prev) => ({...prev, ...selectedNode.data.settings}));
         }, [selectedNode])
     return (
         <div>

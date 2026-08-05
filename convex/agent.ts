@@ -59,6 +59,17 @@ export const UpdateAgentDetail = mutation({
     }
 })
 
+export const PublishAgent = mutation({
+    args: {
+        id: v.id('AgentTable'),
+    },
+    handler: async(ctx, args) => {
+        await ctx.db.patch(args.id, {
+            published: true
+        })
+    }
+})
+
 export const UpdateAgentToolConfig = mutation({
     args: {
         id: v.id('AgentTable'),

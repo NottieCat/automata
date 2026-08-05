@@ -20,7 +20,9 @@ export const CreateNewUser = mutation({
                 token: 5000
             }
             const result = await ctx.db.insert('UserTable', userData);
-            return userData;
+            // Return the full inserted document (including _id) so callers
+            // like CreateAgent / GetUserAgents have a valid userId to work with.
+            return await ctx.db.get(result);
         }
         return user[0];
     }
