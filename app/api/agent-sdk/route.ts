@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
-import { getOpenAi } from "@/config/OpenAiModel";
+import { getOpenAi, getModelName } from "@/config/OpenAiModel";
 import z from "zod";
 import { Agent, run, tool, OpenAIChatCompletionsModel } from "@openai/agents";
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         // Adjust the model ID to whichever you are using via OpenRouter
         const customModel = new OpenAIChatCompletionsModel(
             getOpenAi(),
-            process.env.OPENROUTER_MODEL || "nvidia/nemotron-3-super-120b-a12b:free"
+            getModelName()
         );
 
         // Note: Added .parsedJson fallback based on earlier Convex data structures
@@ -125,8 +125,28 @@ CRITICAL TOOL RULE: When the user asks for something a tool can provide, you MUS
 
         // toTextStream() emits string chunks; a Response body must be bytes,
         // so pipe through TextEncoderStream to avoid "Received non-Uint8Array chunk".
-        const stream = (result.toTextStream() as unknown as ReadableStream<string>)
-            .pipeThrough(new TextEncoderStream());
+        // The provider can also fail MID-stream (e.g. OpenRouter 429 rate limit) —
+        // without the catch below the stream just dies and the client sees nothing.
+        const textStream = result.toTextStream() as unknown as ReadableStream<string>;
+        const stream = new ReadableStream<string>({
+            async start(controller) {
+                const reader = textStream.getReader();
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        controller.enqueue(value);
+                    }
+                } catch (streamError: any) {
+                    console.error("🔴 Stream error:", streamError);
+                    const msg = streamError?.message?.includes("Rate limit")
+                        ? "⚠️ The AI provider's daily rate limit was reached. Please try again later."
+                        : `⚠️ Something went wrong while generating the response: ${streamError?.message || "unknown error"}`;
+                    controller.enqueue(msg);
+                }
+                controller.close();
+            }
+        }).pipeThrough(new TextEncoderStream());
 
         return new Response(stream as any, {
             headers: {

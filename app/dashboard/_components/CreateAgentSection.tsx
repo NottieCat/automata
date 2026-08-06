@@ -18,8 +18,6 @@ import { api } from "@/convex/_generated/api";
 import { v4 as uuidv4 } from "uuid";
 import { useRouter } from "next/navigation";
 import { UserDetailContext } from "@/context/UserDetailContext";
-import { useAuth } from "@clerk/nextjs";
-import { toast } from "sonner";
 
 function CreateAgentSection() {
     const [openDialog, setOpenDialog] = useState(false);
@@ -27,15 +25,9 @@ function CreateAgentSection() {
     const [agentName, setAgentName] = useState<any>();
     const router = useRouter();
     const [loader, setLoader] = useState(false);
-    const {userDetail, setUserDetail} = useContext(UserDetailContext);
-    const {has} = useAuth();
-    const isPaidUser = has&&has({ plan: 'unlimited_plan' })
+    const {userDetail} = useContext(UserDetailContext);
 
     const CreateAgent = async () => {
-        if (!isPaidUser && userDetail && userDetail.remainingCredits <= 0) {
-          toast.error('You have reached the limit of free agents. Please upgrade your plan to create more Agents.');
-          return;
-        }
         setLoader(true);
         const agentId = uuidv4(); // generate a unique id for the agent
         const result = await CreateAgentMutation({

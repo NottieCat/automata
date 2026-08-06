@@ -55,6 +55,24 @@ function ChatUI({
         }),
       });
 
+      // A failed request returns JSON ({error, message}) instead of a text
+      // stream — surface it in the chat instead of silently showing nothing.
+      if (!result.ok) {
+        let detail = "";
+        try {
+          const err = await result.json();
+          detail = err?.message || err?.error || "";
+        } catch {}
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `⚠️ The agent could not respond${detail ? `: ${detail}` : "."} Please try again.`,
+          },
+        ]);
+        return;
+      }
+
       if (!result.body) return;
 
       const reader = result.body.getReader();
@@ -87,6 +105,19 @@ function ChatUI({
       }
     } catch (error) {
       console.error("Error sending message:", error);
+      // Network / stream failure — tell the user instead of leaving the chat blank
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        const errMsg = {
+          role: "assistant" as const,
+          content: "⚠️ The connection failed while the agent was responding. Please try again.",
+        };
+        // Reuse the empty assistant bubble if one was already added
+        if (last?.role === "assistant" && !last.content) {
+          return [...prev.slice(0, -1), errMsg];
+        }
+        return [...prev, errMsg];
+      });
     } finally {
       setLoadingMsg(false);
     }

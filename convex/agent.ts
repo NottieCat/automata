@@ -5,14 +5,21 @@ export const CreateAgent = mutation({
     args: {
         name: v.string(),
         agentId: v.string(),
-        userId: v.id('UserTable')
+        userId: v.id('UserTable'),
+        // Optional prebuilt workflow — used when creating an agent from a template
+        nodes: v.optional(v.any()),
+        edges: v.optional(v.any()),
+        agentToolConfig: v.optional(v.any()),
     },
     handler: async(ctx, args) => {
         const result = await ctx.db.insert('AgentTable', {
             name: args.name,
             agentId: args.agentId,
             published: false,
-            userId: args.userId
+            userId: args.userId,
+            ...(args.nodes ? { nodes: args.nodes } : {}),
+            ...(args.edges ? { edges: args.edges } : {}),
+            ...(args.agentToolConfig ? { agentToolConfig: args.agentToolConfig } : {}),
         })
         return result;
     }

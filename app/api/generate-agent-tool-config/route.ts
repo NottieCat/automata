@@ -1,4 +1,4 @@
-import { getOpenAi } from "@/config/OpenAiModel";
+import { getOpenAi, getModelName } from "@/config/OpenAiModel";
 import { NextRequest, NextResponse } from "next/server";
 
 const PROMPT = `from this flow, Generate a agent instruction prompt with all details along with 
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     // Chat Completions instead of the Responses API — OpenRouter only supports
     // the latter on some providers, and free-tier endpoints often lack it.
     const response = await openai.chat.completions.create({
-        model: process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-super-120b-a12b:free',
+        model: getModelName(),
         messages: [{ role: 'user', content: JSON.stringify(jsonConfig) + PROMPT }],
     })
 

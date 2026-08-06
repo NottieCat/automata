@@ -31,6 +31,7 @@ import WhileNode from "../_customNodes/WhileNode";
 import UserApprovalNode from "../_customNodes/UserApprovalNode";
 import ApiNode from "../_customNodes/ApiNode";
 import SettingPanel from "../_components/SettingPanel";
+import PublishCode from "./preview/_components/PublishCode";
 
 // const initialNodes = [ ];
 // const initialEdges = [{ id: "n1-n2", source: "n1", target: "n2" }];
@@ -52,7 +53,9 @@ function AgentBuilder() {
   const {addedNodes, setAddedNodes, nodeEdges, setNodeEdges, setSelectedNode} = useContext(WorkflowContext);
   const convex = useConvex();
   const UpdateAgentDetail = useMutation(api.agent.UpdateAgentDetail);
+  const publishAgent = useMutation(api.agent.PublishAgent);
   const [agentDetail, setAgentDetail] = useState<Agent>()
+  const [openPublishDialog, setOpenPublishDialog] = useState(false);
 
   useEffect(() => {
     GetAgentDetails();
@@ -111,6 +114,18 @@ function AgentBuilder() {
     toast.success('Saved!');
   }
 
+  // Same behavior as the preview page: mark the agent published (once) and
+  // show the integration-code dialog.
+  const OnPublish = async () => {
+    if (!agentDetail?._id) return;
+    setOpenPublishDialog(true);
+    if (!agentDetail.published) {
+      await publishAgent({ id: agentDetail._id as any });
+      toast.success("Agent published!");
+      GetAgentDetails();
+    }
+  };
+
   const onNodesChange = useCallback(
     (changes: any) => {
       const updated = applyNodeChanges(changes, nodes);
@@ -144,7 +159,7 @@ function AgentBuilder() {
 
   return (
     <div>
-      <Header agentDetail={agentDetail} />
+      <Header agentDetail={agentDetail} onPublish={OnPublish} />
       <div style={{ width: "100vw", height: "90vh" }}>
         <ReactFlow
           nodes={nodes}
@@ -170,6 +185,11 @@ function AgentBuilder() {
           </Panel>
         </ReactFlow>
       </div>
+      <PublishCode
+        openDialog={openPublishDialog}
+        setOpenDialog={setOpenPublishDialog}
+        agentDetail={agentDetail}
+      />
     </div>
   );
 }
