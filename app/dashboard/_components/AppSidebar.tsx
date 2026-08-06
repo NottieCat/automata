@@ -32,7 +32,7 @@ const MenuOptions = [
     },
     {
         title: 'Data',
-        url: '#',
+        url: '/dashboard/data',
         icon: Database
     },
     {

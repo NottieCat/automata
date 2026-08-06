@@ -77,6 +77,15 @@ export const PublishAgent = mutation({
     }
 })
 
+export const DeleteAgent = mutation({
+    args: {
+        id: v.id('AgentTable'),
+    },
+    handler: async(ctx, args) => {
+        await ctx.db.delete(args.id)
+    }
+})
+
 export const UpdateAgentToolConfig = mutation({
     args: {
         id: v.id('AgentTable'),

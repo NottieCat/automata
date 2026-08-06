@@ -1,7 +1,9 @@
+"use client"
 import { Button } from '@/components/ui/button'
 import { Agent } from '@/types/AgentType'
 import { ChevronLeft, Play, X } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import React from 'react'
 
 type Props = {
@@ -11,17 +13,25 @@ type Props = {
 }
 
 function Header({ agentDetail, previewHeader = false, onPublish }: Props) {
-    // Back: preview → builder canvas, builder → dashboard
-    const backHref = previewHeader
-        ? `/agent-builder/${agentDetail?.agentId}`
-        : '/dashboard';
+    const router = useRouter();
+
+    // Go back to wherever the user actually came from (Data tab, My Agents,
+    // Dashboard…). Fall back to /dashboard when there is no in-app history,
+    // e.g. the builder URL was opened directly in a new tab.
+    const goBack = () => {
+        if (window.history.length > 1) {
+            router.back();
+        } else {
+            router.push('/dashboard');
+        }
+    };
 
     return (
         <div className='w-full p-3 flex items-center justify-between'>
             <div className='flex gap-2 items-center'>
-                <Link href={backHref} aria-label='Go back'>
-                    <ChevronLeft className='h-8 w-8 cursor-pointer rounded-md hover:bg-neutral-100 transition-colors' />
-                </Link>
+                <button onClick={goBack} aria-label='Go back' className='cursor-pointer'>
+                    <ChevronLeft className='h-8 w-8 rounded-md hover:bg-neutral-100 transition-colors' />
+                </button>
                 <h2 className='text-xl'>{agentDetail?.name}</h2>
             </div>
             <div className='flex items-center gap-3'>
