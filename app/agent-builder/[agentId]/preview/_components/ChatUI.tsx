@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Agent } from "@/types/AgentType";
-import { Loader2Icon, RefreshCwIcon, Send } from "lucide-react";
+import { Loader2Icon, Send } from "lucide-react";
 import React, { useState } from "react";
 import Markdown from 'react-markdown'
 // import remarkGfm from 'remark-gfm'
@@ -12,18 +12,11 @@ type Message = {
 };
 
 type Props = {
-  GenerateAgentToolConfig: () => void;
-  loading: boolean;
   agentDetail: Agent;
   conversationId: string | null;
 };
 
-function ChatUI({
-  GenerateAgentToolConfig,
-  loading,
-  agentDetail,
-  conversationId,
-}: Props) {
+function ChatUI({ agentDetail, conversationId }: Props) {
   const [userInput, setUserInput] = useState<string>("");
   const [loadingMsg, setLoadingMsg] = useState(false);
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
@@ -124,15 +117,11 @@ function ChatUI({
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center border-b p-4">
+    <div className="h-full flex flex-col">
+      <div className="flex items-center border-b p-4">
         <h2>{agentDetail?.name}</h2>
-        <Button onClick={GenerateAgentToolConfig} disabled={loading}>
-          <RefreshCwIcon className={`${loading && "animate-spin"} mr-2`} />{" "}
-          Reboot Agent
-        </Button>
       </div>
-      <div className="w-full h-[90vh] p-4 flex flex-col">
+      <div className="w-full flex-1 min-h-0 p-4 flex flex-col">
         {/* Message Section */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
           {messages.map((msg, index) => (
@@ -165,7 +154,7 @@ function ChatUI({
       </div>
 
       {/* Footer Input */}
-      <div className="p-1 mt-3 border-t flex items-center gap-2">
+      <div className="p-2 border-t flex items-center gap-2">
         <textarea
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}

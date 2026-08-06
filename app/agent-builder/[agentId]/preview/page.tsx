@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Header from "../../_components/Header";
 import { useConvex, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -8,8 +8,7 @@ import { Agent } from "@/types/AgentType";
 import { Background, ReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import axios from "axios";
-import { Button } from "@/components/ui/button";
-import { RefreshCcwIcon } from "lucide-react";
+import { Loader2Icon } from "lucide-react";
 import ChatUI from "./_components/ChatUI";
 import { toast } from "sonner";
 import PublishCode from "./_components/PublishCode";
@@ -25,6 +24,7 @@ function PreviewAgent() {
   const publishAgent = useMutation(api.agent.PublishAgent);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const autoGenerateAttempted = useRef(false);
 
   useEffect(() => {
     GetAgentDetails();
@@ -156,7 +156,19 @@ function PreviewAgent() {
     setFlowConfig(config);
   };
 
-  // 📂 Inside page.tsx (PreviewAgent component)
+  // Auto-generate the tool config on first load so the chat is usable
+  // immediately, without a manual "Reboot Agent" click.
+  useEffect(() => {
+    if (
+      flowConfig &&
+      agentDetail &&
+      !agentDetail.agentToolConfig &&
+      !autoGenerateAttempted.current
+    ) {
+      autoGenerateAttempted.current = true;
+      GenerateAgentToolConfig();
+    }
+  }, [flowConfig, agentDetail]);
 
   const GenerateAgentToolConfig = async () => {
     setLoading(true);
@@ -190,16 +202,16 @@ function PreviewAgent() {
   }
 
   return (
-    <div>
+    <div className="h-screen flex flex-col overflow-hidden">
       <Header
         previewHeader={true}
         agentDetail={agentDetail}
         onPublish={OnPublish}
       />
-      <div className="grid grid-cols-4">
-        <div className="col-span-3 p-5 border rounded-2xl m-5">
+      <div className="grid grid-cols-4 flex-1 min-h-0">
+        <div className="col-span-3 p-5 border rounded-2xl mx-5 mb-5 flex flex-col min-h-0">
           <h2>Preview</h2>
-          <div style={{ width: "100%", height: "90vh" }}>
+          <div className="flex-1 min-h-0 w-full">
             <ReactFlow
               nodes={agentDetail?.nodes || []}
               edges={agentDetail?.edges || []}
@@ -212,18 +224,14 @@ function PreviewAgent() {
             </ReactFlow>
           </div>
         </div>
-        <div className="col-span-1 border rounded-2xl p-5 m-5">
+        <div className="col-span-1 border rounded-2xl mx-5 mb-5 flex flex-col min-h-0 overflow-hidden">
           {!agentDetail?.agentToolConfig ? (
-            <div className="flex items-center justify-center h-full">
-              <Button onClick={GenerateAgentToolConfig} disabled={loading}>
-                <RefreshCcwIcon className={`${loading && "animate-spin"}`} />{" "}
-                Reboot Agent
-              </Button>
+            <div className="flex items-center justify-center h-full gap-2 text-muted-foreground">
+              <Loader2Icon className="animate-spin" />
+              Preparing agent...
             </div>
           ) : (
             <ChatUI
-              GenerateAgentToolConfig={GenerateAgentToolConfig}
-              loading={loading}
               agentDetail={agentDetail}
               conversationId={conversationId}
             />
